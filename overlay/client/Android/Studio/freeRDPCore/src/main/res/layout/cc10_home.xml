@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#087E73" android:focusable="true" android:focusableInTouchMode="true">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|start" android:layout_margin="30dp" android:text="CC10远程桌面" android:textColor="#FFFFFF" android:textSize="28sp" android:textStyle="bold"/>
+    <Button android:id="@+id/buttonAdvanced" android:layout_width="140dp" android:layout_height="52dp" android:layout_gravity="top|end" android:layout_margin="24dp" android:text="高级设置" android:textSize="17sp" android:textColor="#087E73" android:backgroundTint="#FFFFFF"/>
+    <LinearLayout android:layout_width="760dp" android:layout_height="wrap_content" android:layout_gravity="center" android:orientation="vertical" android:padding="34dp" android:background="@drawable/cc10_rdp_card">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="连接远程桌面" android:textColor="#263238" android:textSize="25sp" android:textStyle="bold"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:orientation="horizontal">
+            <EditText android:id="@+id/editHostname" android:layout_width="0dp" android:layout_height="58dp" android:layout_weight="1" android:hint="IP 地址或域名" android:inputType="textUri" android:singleLine="true" android:textSize="19sp"/>
+            <EditText android:id="@+id/editPort" android:layout_width="130dp" android:layout_height="58dp" android:layout_marginStart="20dp" android:hint="端口" android:inputType="number" android:singleLine="true" android:textSize="19sp"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:orientation="horizontal">
+            <EditText android:id="@+id/editUsername" android:layout_width="0dp" android:layout_height="58dp" android:layout_weight="1" android:hint="用户名" android:inputType="text" android:singleLine="true" android:textSize="19sp"/>
+            <EditText android:id="@+id/editPassword" android:layout_width="0dp" android:layout_height="58dp" android:layout_marginStart="20dp" android:layout_weight="1" android:hint="密码" android:inputType="textPassword" android:singleLine="true" android:textSize="19sp"/>
+        </LinearLayout>
+        <Button android:id="@+id/buttonConnect" android:layout_width="match_parent" android:layout_height="62dp" android:layout_marginTop="24dp" android:text="连接" android:textColor="#FFFFFF" android:textSize="21sp" android:textStyle="bold" android:backgroundTint="#0AAF83"/>
+        <TextView android:id="@+id/textConnectionStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center" android:text="正在读取连接信息…" android:textColor="#607D8B" android:textSize="15sp"/>
+    </LinearLayout>
+</FrameLayout>

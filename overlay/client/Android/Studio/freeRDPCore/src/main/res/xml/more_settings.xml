@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="高级设置">
+        <Preference
+            android:key="bookmark.screen"
+            android:title="@string/settings_screen"
+            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$ScreenFragment" />
+        <Preference
+            android:key="bookmark.performance"
+            android:title="@string/settings_performance"
+            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$PerformanceFragment" />
+        <Preference
+            android:key="bookmark.advanced"
+            android:title="连接与设备重定向"
+            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$AdvancedFragment" />
+        <Preference
+            android:key="bookmark.debug"
+            android:title="@string/settings_debug"
+            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$DebugFragment" />
+        <Preference
+            android:key="cc10.application_settings"
+            android:title="应用设置"
+            android:summary="全屏、输入、证书及连接行为" />
+        <Preference
+            android:key="cc10.help"
+            android:title="帮助"
+            android:summary="查看远程桌面操作说明" />
+    </PreferenceCategory>
+</PreferenceScreen>

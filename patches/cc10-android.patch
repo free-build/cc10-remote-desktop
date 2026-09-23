@@ -1,0 +1,1360 @@
+diff --git a/client/Android/Studio/aFreeRDP/build.gradle b/client/Android/Studio/aFreeRDP/build.gradle
+index 15dcb58..90624bc 100644
+--- a/client/Android/Studio/aFreeRDP/build.gradle
++++ b/client/Android/Studio/aFreeRDP/build.gradle
+@@ -9,11 +9,11 @@ android {
+         targetSdkVersion rootProject.ext.targetApi
+         versionName = rootProject.ext.versionName
+         if (versionName.isEmpty())
+-          versionName = androidGitVersion.name()
++          versionName = '1.0.0'
+ 
+         versionCode = rootProject.ext.versionCode
+         if (versionCode <= 0)
+-          versionCode = androidGitVersion.code()
++          versionCode = 1
+ 
+         println 'VERSION_NAME:        ' + versionName
+         println 'VERSION_CODE:        ' + versionCode
+diff --git a/client/Android/Studio/aFreeRDP/src/main/AndroidManifest.xml b/client/Android/Studio/aFreeRDP/src/main/AndroidManifest.xml
+index d7e9c25..1beb857 100644
+--- a/client/Android/Studio/aFreeRDP/src/main/AndroidManifest.xml
++++ b/client/Android/Studio/aFreeRDP/src/main/AndroidManifest.xml
+@@ -5,16 +5,17 @@
+ 
+     <application
+         android:name="com.freerdp.afreerdp.application.GlobalApp"
+-        android:icon="@mipmap/ic_launcher"
+-        android:label="aFreeRDP"
++        android:icon="@drawable/cc10_remote_desktop_icon"
++        android:label="@string/app_title"
+         android:resizeableActivity="true">
+ 
+         <!-- Main activity -->
+         <activity
+             android:exported="true"
+-            android:name="com.freerdp.freerdpcore.presentation.HomeActivity"
++            android:name="com.freerdp.freerdpcore.presentation.CC10HomeActivity"
+             android:alwaysRetainTaskState="true"
+             android:label="@string/app_title"
++            android:screenOrientation="landscape"
+             android:theme="@style/Theme.Main"
+             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|density|screenLayout">
+ 
+@@ -84,6 +85,7 @@
+         <activity
+             android:exported="true"
+             android:name="com.freerdp.freerdpcore.services.SessionRequestHandlerActivity"
++            android:screenOrientation="landscape"
+             android:excludeFromRecents="true"
+             android:noHistory="true"
+             android:theme="@style/Theme.Main">
+diff --git a/client/Android/Studio/aFreeRDP/src/main/res/values/strings.xml b/client/Android/Studio/aFreeRDP/src/main/res/values/strings.xml
+index 11d2a39..da02b98 100644
+--- a/client/Android/Studio/aFreeRDP/src/main/res/values/strings.xml
++++ b/client/Android/Studio/aFreeRDP/src/main/res/values/strings.xml
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <resources>
+-    <string name="app_title" translatable="false">aFreeRDP</string>
++    <string name="app_title" translatable="false">CC10远程桌面</string>
+     <!-- Search strings -->
+ </resources>
+diff --git a/client/Android/Studio/build.gradle b/client/Android/Studio/build.gradle
+index 3a41b46..8dfe556 100644
+--- a/client/Android/Studio/build.gradle
++++ b/client/Android/Studio/build.gradle
+@@ -2,25 +2,12 @@ buildscript {
+     repositories {
+         mavenCentral()
+         google()
+-        maven {
+-            url 'https://maven.google.com'
+-        }
+     }
+     dependencies {
+        classpath 'com.android.tools.build:gradle:9.2.1'
+     }
+ }
+ 
+-plugins {
+-    id 'com.gladed.androidgitversion' version '0.4.14'
+-}
+-
+-androidGitVersion {
+-    abis = ['armeabi':1, 'armeabi-v7a':2, 'arm64-v8a':3, "riscv64":4, 'mips':5, 'mips64':6, 'x86':8, 'x86_64':9 ]
+-    prefix ''
+-    codeFormat 'MMNNPPRA'
+-}
+-
+ // Top-level build file where you can add configuration options common to all sub-projects/modules.
+ Properties releaseProperties = new Properties()
+ File file = new File('release.properties')
+@@ -77,9 +64,6 @@ allprojects {
+     repositories {
+         mavenCentral()
+         google()
+-        maven {
+-            url 'https://maven.google.com'
+-        }
+     }
+ 
+     subprojects {
+diff --git a/client/Android/Studio/freeRDPCore/src/main/AndroidManifest.xml b/client/Android/Studio/freeRDPCore/src/main/AndroidManifest.xml
+index e44f97b..5afab09 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/AndroidManifest.xml
++++ b/client/Android/Studio/freeRDPCore/src/main/AndroidManifest.xml
+@@ -59,6 +59,7 @@
+         <activity
+             android:exported="false"
+             android:name=".presentation.BookmarkActivity"
++            android:screenOrientation="landscape"
+             android:label="@string/title_bookmark_settings"
+             android:theme="@style/Theme.Main" />
+         <activity
+@@ -70,6 +71,7 @@
+         <activity
+             android:exported="true"
+             android:name=".presentation.SessionActivity"
++            android:screenOrientation="landscape"
+             android:theme="@style/Theme.Main.Session"
+             android:configChanges="orientation|keyboard|keyboardHidden|screenSize|smallestScreenSize|density|screenLayout|navigation"
+             android:windowSoftInputMode="adjustResize"
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/data/BookmarkDao.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/data/BookmarkDao.java
+index 40651fa..dd8666a 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/data/BookmarkDao.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/data/BookmarkDao.java
+@@ -30,6 +30,9 @@ public interface BookmarkDao {
+ 
+ 	@Query("SELECT * FROM bookmarks WHERE id = :id") BookmarkEntity getById(long id);
+ 
++	@Query("SELECT * FROM bookmarks WHERE hostname = :hostname ORDER BY id ASC LIMIT 1")
++	BookmarkEntity getFirstByHostname(String hostname);
++
+ 	@Query("SELECT * FROM bookmarks WHERE label LIKE :query OR hostname LIKE :query "
+ 	       + "ORDER BY label COLLATE NOCASE ASC")
+ 	List<BookmarkEntity>
+@@ -47,4 +50,5 @@ public interface BookmarkDao {
+ 	@Delete void delete(BookmarkEntity entity);
+ 
+ 	@Query("DELETE FROM bookmarks WHERE id = :id") void deleteById(long id);
++	@Query("DELETE FROM bookmarks WHERE id != :keepId") void deleteAllExcept(long keepId);
+ }
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/BookmarkActivity.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/BookmarkActivity.java
+index bda7a3d..fbfb6a6 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/BookmarkActivity.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/BookmarkActivity.java
+@@ -15,6 +15,8 @@ import android.os.Bundle;
+ import android.view.Menu;
+ import android.view.MenuInflater;
+ import android.view.MenuItem;
++import android.util.Base64;
++import android.widget.Toast;
+ 
+ import androidx.activity.OnBackPressedCallback;
+ import androidx.appcompat.app.AlertDialog;
+@@ -28,6 +30,8 @@ import com.freerdp.freerdpcore.R;
+ import com.freerdp.freerdpcore.domain.BookmarkBase;
+ import com.freerdp.freerdpcore.services.LibFreeRDP;
+ 
++import java.nio.charset.StandardCharsets;
++
+ public class BookmarkActivity
+     extends AppCompatActivity implements PreferenceFragmentCompat.OnPreferenceStartFragmentCallback
+ {
+@@ -56,8 +60,14 @@ public class BookmarkActivity
+ 			if (isComplete)
+ 				finish();
+ 		});
++		viewModel.getSaveErrorEvent().observe(this, error -> {
++			if (error != null)
++				Toast.makeText(this, "连接保存失败：" + error, Toast.LENGTH_LONG).show();
++		});
+ 
+ 		viewModel.getBookmarkLiveData().observe(this, bookmark -> {
++			SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
++			applyProvisioningExtras(prefs);
+ 			// Once data is loaded and written to SharedPreferences, attach the fragment
+ 			if (getSupportFragmentManager().findFragmentByTag("main") == null)
+ 			{
+@@ -85,6 +95,34 @@ public class BookmarkActivity
+ 		});
+ 	}
+ 
++	private void applyProvisioningExtras(SharedPreferences prefs)
++	{
++		Bundle extras = getIntent().getExtras();
++		if (extras == null || !extras.getBoolean("cc10.prefill", false))
++			return;
++
++		SharedPreferences.Editor editor = prefs.edit();
++		if (extras.containsKey("cc10.label"))
++			editor.putString("bookmark.label", extras.getString("cc10.label", ""));
++		else if (extras.containsKey("cc10.label_b64"))
++			editor.putString("bookmark.label",
++			                 new String(Base64.decode(extras.getString("cc10.label_b64", ""),
++			                                          Base64.DEFAULT),
++			                            StandardCharsets.UTF_8));
++		if (extras.containsKey("cc10.hostname"))
++			editor.putString("bookmark.hostname", extras.getString("cc10.hostname", ""));
++		if (extras.containsKey("cc10.port"))
++			editor.putInt("bookmark.port", extras.getInt("cc10.port", 3389));
++		if (extras.containsKey("cc10.username"))
++			editor.putString("bookmark.username", extras.getString("cc10.username", ""));
++		if (extras.containsKey("cc10.password"))
++			editor.putString("bookmark.password", extras.getString("cc10.password", ""));
++		editor.commit();
++		viewModel.setNewBookmark(true);
++		viewModel.setSettingsChanged(true);
++		getIntent().removeExtra("cc10.prefill");
++	}
++
+ 	@Override protected void onDestroy()
+ 	{
+ 		super.onDestroy();
+@@ -190,21 +228,14 @@ public class BookmarkActivity
+ 			getPreferenceManager().setSharedPreferencesMode(MODE_PRIVATE);
+ 			setPreferencesFromResource(R.xml.bookmark_settings, rootKey);
+ 
+-			Preference credPref = findPreference("bookmark.credentials");
+-			if (credPref != null)
++			Preference passwordPref = findPreference("bookmark.password");
++			if (passwordPref != null)
+ 			{
+-				credPref.setSummaryProvider(preference -> {
++				passwordPref.setSummaryProvider(preference -> {
+ 					SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+-					String username = sp.getString("bookmark.username", "<none>");
+-					String domain = sp.getString("bookmark.domain", "");
+-
+-					if (username.isEmpty())
+-						return "<none>";
+-
+-					if (!domain.isEmpty())
+-						return domain + "\\" + username;
+-
+-					return username;
++					String pwd = sp.getString("bookmark.password", "");
++					return pwd.isEmpty() ? getString(R.string.settings_password_empty)
++					                     : getString(R.string.settings_password_present);
+ 				});
+ 			}
+ 
+@@ -227,6 +258,28 @@ public class BookmarkActivity
+ 		}
+ 	}
+ 
++	public static class MoreSettingsFragment extends PreferenceFragmentCompat
++	{
++		@Override public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
++		{
++			getPreferenceManager().setSharedPreferencesName(PREFS_NAME);
++			getPreferenceManager().setSharedPreferencesMode(MODE_PRIVATE);
++                        setPreferencesFromResource(R.xml.more_settings, rootKey);
++			Preference appSettings = findPreference("cc10.application_settings");
++			if (appSettings != null)
++				appSettings.setOnPreferenceClickListener(p -> {
++					startActivity(new android.content.Intent(requireContext(), ApplicationSettingsActivity.class));
++					return true;
++				});
++			Preference help = findPreference("cc10.help");
++			if (help != null)
++				help.setOnPreferenceClickListener(p -> {
++					startActivity(new android.content.Intent(requireContext(), HelpActivity.class));
++					return true;
++				});
++                }
++	}
++
+ 	// -------------------------------------------------------------------------
+ 
+ 	public static class CredentialsFragment extends PreferenceFragmentCompat
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/BookmarkViewModel.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/BookmarkViewModel.java
+index 36d46fb..4fdbfe4 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/BookmarkViewModel.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/BookmarkViewModel.java
+@@ -42,6 +42,7 @@ public class BookmarkViewModel extends AndroidViewModel
+ 	// LiveData for observing state changes from the Activity
+ 	private final MutableLiveData<BookmarkBase> bookmarkLiveData = new MutableLiveData<>();
+ 	private final MutableLiveData<Boolean> saveCompleteEvent = new MutableLiveData<>();
++	private final MutableLiveData<String> saveErrorEvent = new MutableLiveData<>();
+ 
+ 	private boolean settingsChanged = false;
+ 	private boolean newBookmark = false;
+@@ -71,6 +72,11 @@ public class BookmarkViewModel extends AndroidViewModel
+ 		return saveCompleteEvent;
+ 	}
+ 
++	public LiveData<String> getSaveErrorEvent()
++	{
++		return saveErrorEvent;
++	}
++
+ 	public BookmarkBase getBookmark()
+ 	{
+ 		return bookmarkLiveData.getValue();
+@@ -154,6 +160,7 @@ public class BookmarkViewModel extends AndroidViewModel
+ 			if (bookmark == null)
+ 			{
+ 				bookmark = new BookmarkBase();
++				isNew = true;
+ 			}
+ 
+ 			this.newBookmark = isNew;
+@@ -175,24 +182,43 @@ public class BookmarkViewModel extends AndroidViewModel
+ 			return;
+ 
+ 		executor.execute(() -> {
+-			bookmark.readFromSharedPreferences(prefs);
+-
+-			if (bookmark.getType() == BookmarkBase.TYPE_MANUAL)
++			try
+ 			{
+-				quickConnectHistoryGateway.removeHistoryItem(bookmark.getHostname());
++				bookmark.readFromSharedPreferences(prefs);
+ 
+-				if (bookmark.getId() > 0)
+-				{
+-					manualBookmarkGateway.update(bookmark);
+-				}
+-				else
++				if (bookmark.getType() == BookmarkBase.TYPE_MANUAL)
+ 				{
+-					manualBookmarkGateway.insert(bookmark);
++					if (bookmark.getId() <= 0)
++					{
++						BookmarkBase existing =
++						    manualBookmarkGateway.findFirstByHostname(bookmark.getHostname());
++						if (existing != null)
++							bookmark.setId(existing.getId());
++					}
++
++					if (bookmark.getId() > 0)
++						manualBookmarkGateway.update(bookmark);
++					else
++						manualBookmarkGateway.insert(bookmark);
++
++					try
++					{
++						quickConnectHistoryGateway.removeHistoryItem(bookmark.getHostname());
++					}
++					catch (RuntimeException e)
++					{
++						Log.w(TAG, "Saved bookmark but could not clean quick-connect history", e);
++					}
+ 				}
+-			}
+ 
+-			// Notify Activity to close
+-			saveCompleteEvent.postValue(true);
++				Log.i(TAG, "Saved bookmark id=" + bookmark.getId() + " host=" + bookmark.getHostname());
++				saveCompleteEvent.postValue(true);
++			}
++			catch (RuntimeException e)
++			{
++				Log.e(TAG, "Failed to save bookmark", e);
++				saveErrorEvent.postValue(e.getClass().getSimpleName());
++			}
+ 		});
+ 	}
+ 
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/FloatingToolbar.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/FloatingToolbar.java
+index 1c0bbba..a737b33 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/FloatingToolbar.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/FloatingToolbar.java
+@@ -11,6 +11,7 @@
+ package com.freerdp.freerdpcore.presentation;
+ 
+ import android.app.Activity;
++import android.content.SharedPreferences;
+ import android.view.GestureDetector;
+ import android.view.MotionEvent;
+ import android.view.View;
+@@ -25,6 +26,8 @@ public class FloatingToolbar
+ 	{
+ 		void onToggleTouchPointer();
+ 		void onToggleKeyboard();
++		void onMicrophoneInfo();
++		void onDisconnect();
+ 	}
+ 
+ 	private enum Edge
+@@ -37,6 +40,11 @@ public class FloatingToolbar
+ 
+ 	private final LinearLayout container;
+ 	private final LinearLayout buttons;
++	private final View handle;
++	private final SharedPreferences positionPreferences;
++	private static final String POSITION_PREFS = "cc10_rdp_floating_toolbar";
++	private static final String KEY_EDGE = "edge";
++	private static final String KEY_FRACTION = "fraction";
+ 	private boolean expanded = false;
+ 	private int insetLeft = 0, insetTop = 0, insetRight = 0, insetBottom = 0;
+ 	private Edge snappedEdge = Edge.LEFT;
+@@ -54,7 +62,18 @@ public class FloatingToolbar
+ 	{
+ 		container = activity.findViewById(R.id.floating_toolbar_container);
+ 		buttons = activity.findViewById(R.id.floating_toolbar_buttons);
+-		View handle = activity.findViewById(R.id.floating_toolbar_handle);
++		handle = activity.findViewById(R.id.floating_toolbar_handle);
++		positionPreferences = activity.getSharedPreferences(POSITION_PREFS, Activity.MODE_PRIVATE);
++		try
++		{
++			snappedEdge = Edge.valueOf(positionPreferences.getString(KEY_EDGE, Edge.LEFT.name()));
++		}
++		catch (IllegalArgumentException ignored)
++		{
++			snappedEdge = Edge.LEFT;
++		}
++		snappedFraction = Math.max(0f, Math.min(1f,
++		    positionPreferences.getFloat(KEY_FRACTION, 0.4f)));
+ 		setTooltip(handle);
+ 
+ 		GestureDetector gestureDetector =
+@@ -74,6 +93,8 @@ public class FloatingToolbar
+ 
+ 		bindButton(activity, R.id.floating_toolbar_touch_pointer, listener::onToggleTouchPointer);
+ 		bindButton(activity, R.id.floating_toolbar_sys_keyboard, listener::onToggleKeyboard);
++		bindButton(activity, R.id.floating_toolbar_microphone, listener::onMicrophoneInfo);
++		bindButton(activity, R.id.floating_toolbar_disconnect, listener::onDisconnect);
+ 
+ 		ViewTreeObserver vto = container.getViewTreeObserver();
+ 		vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+@@ -95,15 +116,7 @@ public class FloatingToolbar
+ 
+ 	private void positionInitial(View parent)
+ 	{
+-		container.setOrientation(LinearLayout.VERTICAL);
+-		buttons.setOrientation(LinearLayout.VERTICAL);
+-		snappedEdge = Edge.LEFT;
+-		snappedFraction = 0.4f;
+-		float ph = parent.getHeight();
+-		float ch = container.getHeight();
+-		container.setX(insetLeft);
+-		container.setY(
+-		    Math.max(insetTop, insetTop + snappedFraction * (ph - insetTop - insetBottom - ch)));
++		resnapToSameEdge();
+ 	}
+ 
+ 	private void resnapToSameEdge()
+@@ -151,9 +164,16 @@ public class FloatingToolbar
+ 	{
+ 		expanded = !expanded;
+ 		buttons.setVisibility(expanded ? View.VISIBLE : View.GONE);
++		updateHandleDirection();
+ 		snap();
+ 	}
+ 
++	private void updateHandleDirection()
++	{
++		boolean pointRight = (snappedEdge == Edge.LEFT) ? !expanded : expanded;
++		handle.setRotation(pointRight ? 0f : 180f);
++	}
++
+ 	private void bindButton(Activity activity, int id, Runnable action)
+ 	{
+ 		View v = activity.findViewById(id);
+@@ -203,11 +223,16 @@ public class FloatingToolbar
+ 							cancel.recycle();
+ 						}
+ 						if (dragging)
+-							container.animate()
+-							    .x(e.getRawX() + offsetX)
+-							    .y(e.getRawY() + offsetY)
++						{
++							View parent = (View)container.getParent();
++							float maxX = Math.max(insetLeft, parent.getWidth() - container.getWidth() - insetRight);
++							float maxY = Math.max(insetTop, parent.getHeight() - container.getHeight() - insetBottom);
++							float x = Math.max(insetLeft, Math.min(e.getRawX() + offsetX, maxX));
++							float y = Math.max(insetTop, Math.min(e.getRawY() + offsetY, maxY));
++							container.animate().x(x).y(y)
+ 							    .setDuration(0)
+ 							    .start();
++						}
+ 						else
+ 							v.onTouchEvent(e);
+ 						break;
+@@ -233,26 +258,16 @@ public class FloatingToolbar
+ 		float pw = parent.getWidth(), ph = parent.getHeight();
+ 		float cw = container.getWidth(), ch = container.getHeight();
+ 
+-		float dLeft = px - insetLeft;
+-		float dRight = Math.max(0, pw - px - cw - insetRight);
+-		float dTop = py - insetTop;
+-		float dBottom = Math.max(0, ph - py - ch - insetBottom);
+-		float min = Math.min(Math.min(dLeft, dRight), Math.min(dTop, dBottom));
+-
+-		if (min == dLeft)
+-			snappedEdge = Edge.LEFT;
+-		else if (min == dRight)
+-			snappedEdge = Edge.RIGHT;
+-		else if (min == dTop)
+-			snappedEdge = Edge.TOP;
+-		else
+-			snappedEdge = Edge.BOTTOM;
++		float dLeft = Math.abs(px - insetLeft);
++		float dRight = Math.abs(pw - px - cw - insetRight);
++		snappedEdge = dLeft <= dRight ? Edge.LEFT : Edge.RIGHT;
+ 
+ 		int orientation = (snappedEdge == Edge.LEFT || snappedEdge == Edge.RIGHT)
+ 		                      ? LinearLayout.VERTICAL
+ 		                      : LinearLayout.HORIZONTAL;
+ 		container.setOrientation(orientation);
+ 		buttons.setOrientation(orientation);
++		updateHandleDirection();
+ 
+ 		container.post(() -> {
+ 			float w = container.getWidth(), h = container.getHeight();
+@@ -286,6 +301,10 @@ public class FloatingToolbar
+ 				snappedFraction =
+ 				    available > 0 ? Math.max(0f, Math.min(1f, (tx - insetLeft) / available)) : 0.5f;
+ 			}
++			positionPreferences.edit()
++			    .putString(KEY_EDGE, snappedEdge.name())
++			    .putFloat(KEY_FRACTION, snappedFraction)
++			    .apply();
+ 			container.animate().x(tx).y(ty).setDuration(250).start();
+ 		});
+ 	}
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/HomeActivity.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/HomeActivity.java
+index 1292680..746b44c 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/HomeActivity.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/HomeActivity.java
+@@ -78,6 +78,13 @@ public class HomeActivity extends AppCompatActivity
+ 		// check for passed .rdp file and open it in a new bookmark
+ 		Intent caller = getIntent();
+ 		Uri callParameter = caller.getData();
++		if (caller.getBooleanExtra("cc10.prefill", false))
++		{
++			Intent bookmarkIntent = new Intent(this, BookmarkActivity.class);
++			bookmarkIntent.putExtras(caller.getExtras());
++			caller.removeExtra("cc10.prefill");
++			startActivity(bookmarkIntent);
++		}
+ 
+ 		if (Intent.ACTION_VIEW.equals(caller.getAction()) && callParameter != null)
+ 		{
+@@ -128,6 +135,10 @@ public class HomeActivity extends AppCompatActivity
+ 
+ 		binding.recyclerViewBookmarks.setLayoutManager(new LinearLayoutManager(this));
+ 		binding.recyclerViewBookmarks.setAdapter(bookmarkListAdapter);
++		binding.buttonNewConnection.setOnClickListener(v -> {
++			Intent bookmarkIntent = new Intent(this, BookmarkActivity.class);
++			startActivity(bookmarkIntent);
++		});
+ 
+ 		viewModel.getBookmarks().observe(this,
+ 		                                 bookmarks -> bookmarkListAdapter.setItems(bookmarks));
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/PrintJobMonitor.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/PrintJobMonitor.java
+index 3a12a25..b04c122 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/PrintJobMonitor.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/PrintJobMonitor.java
+@@ -35,7 +35,8 @@ public class PrintJobMonitor extends FileObserver
+ 
+ 	public PrintJobMonitor(Listener listener)
+ 	{
+-		super(new File(WATCH_DIR), CLOSE_WRITE);
++		// The File overload was only added in Android 10. CC10 runs Android 8.1.
++		super(WATCH_DIR, CLOSE_WRITE);
+ 		this.listener = listener;
+ 	}
+ 
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionActivity.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionActivity.java
+index 31b0099..b3b3c07 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionActivity.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionActivity.java
+@@ -129,6 +129,10 @@ public class SessionActivity extends AppCompatActivity
+ 
+ 	private int screen_width;
+ 	private int screen_height;
++	private static final int CC10_DESKTOP_WIDTH = 1280;
++	private static final int CC10_DESKTOP_HEIGHT = 800;
++	private static final int MAX_NATIVE_RESIZE_ATTEMPTS = 4;
++	private int nativeResizeAttempts = 0;
+ 
+ 	private BookmarkBase pendingConnectBookmark = null;
+ 	private boolean connectCancelledByUser = false;
+@@ -166,7 +170,8 @@ public class SessionActivity extends AppCompatActivity
+ 
+ 		getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+ 		getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+-		getWindow().setNavigationBarContrastEnforced(false);
++		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
++			getWindow().setNavigationBarContrastEnforced(false);
+ 
+ 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+ 		{
+@@ -216,7 +221,7 @@ public class SessionActivity extends AppCompatActivity
+ 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+ 			lp.layoutInDisplayCutoutMode =
+ 			    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+-		else
++		else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+ 			lp.layoutInDisplayCutoutMode =
+ 			    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+ 		getWindow().setAttributes(lp);
+@@ -277,6 +282,19 @@ public class SessionActivity extends AppCompatActivity
+ 				if (inputManager != null)
+ 					inputManager.toggleKeyboard();
+ 			}
++			@Override public void onMicrophoneInfo()
++			{
++				boolean enabled = session != null && session.getBookmark() != null &&
++				                  session.getBookmark().getAdvancedSettings().getRedirectMicrophone();
++				Toast.makeText(SessionActivity.this,
++				               enabled ? "CC10 麦克风正在重定向到远程桌面"
++				                       : "麦克风未启用，请在高级设置中开启后重新连接",
++				               Toast.LENGTH_LONG).show();
++			}
++			@Override public void onDisconnect()
++			{
++				confirmDisconnect();
++			}
+ 		});
+ 
+ 		ExtendedKeyboardView keyboard = findViewById(R.id.extended_keyboard);
+@@ -295,8 +313,9 @@ public class SessionActivity extends AppCompatActivity
+ 		});
+ 
+ 		// Wire up the input manager (instance is attached later in bindSession()).
+-		inputManager =
+-		    new SessionInputManager(this, scrollView, sessionView, touchPointerView, keyboard);
++				inputManager =
++				    new SessionInputManager(this, scrollView, sessionView, touchPointerView, keyboard);
++				scrollView.setScrollEnabled(false);
+ 		sessionView.setSessionViewListener(inputManager);
+ 		touchPointerView.setTouchPointerListener(inputManager);
+ 		sessionView.setScaleGestureDetector(
+@@ -652,6 +671,8 @@ public class SessionActivity extends AppCompatActivity
+ 		Bitmap surface = session.getSurface() != null ? session.getSurface().getBitmap() : null;
+ 		inputManager.attachSession(session.getInstance(), surface);
+ 		inputManager.setScreenSize(screen_width, screen_height);
++		scrollView.setScrollEnabled(false);
++		sessionView.setZoom(1.0f);
+ 		hideSystemBars();
+ 		View rootView = findViewById(R.id.session_root_view);
+ 		if (rootView != null)
+@@ -665,6 +686,23 @@ public class SessionActivity extends AppCompatActivity
+ 		finish();
+ 	}
+ 
++	private void confirmDisconnect()
++	{
++		new androidx.appcompat.app.AlertDialog.Builder(this)
++		    .setTitle("断开远程桌面")
++		    .setMessage("确定要断开当前连接吗？")
++		    .setNegativeButton("取消", null)
++		    .setPositiveButton("断开", (dialog, which) -> {
++			    connectCancelledByUser = true;
++			    if (session != null)
++			    {
++				    LibFreeRDP.cancelConnection(session.getInstance());
++				    LibFreeRDP.disconnect(session.getInstance());
++			    }
++			    closeSessionActivity(RESULT_OK);
++		    }).show();
++	}
++
+ 	public void handleBackPressed()
+ 	{
+ 		// hide keyboards (if any visible) or send alt+f4 to the session
+@@ -733,6 +771,7 @@ public class SessionActivity extends AppCompatActivity
+ 	// LibFreeRDP UI event listener implementation
+ 	@Override public void OnSettingsChanged(int width, int height, int bpp)
+ 	{
++		Log.i(TAG, "RDP negotiated desktop: " + width + "x" + height + " @ " + bpp + "bpp");
+ 
+ 		if (bpp > 16)
+ 			bitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888);
+@@ -777,6 +816,7 @@ public class SessionActivity extends AppCompatActivity
+ 
+ 	@Override public void OnGraphicsResize(int width, int height, int bpp)
+ 	{
++		Log.i(TAG, "RDP server resized desktop: " + width + "x" + height + " @ " + bpp + "bpp");
+ 		// replace bitmap
+ 		if (bpp > 16)
+ 			bitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888);
+@@ -787,6 +827,14 @@ public class SessionActivity extends AppCompatActivity
+ 		if (inputManager != null)
+ 			inputManager.setBitmap(bitmap);
+ 
++		// xrdp can restore an old 2560x1440 session after initially accepting
++		// 1280x800. Ask the server to change its framebuffer back to the CC10 native
++		// size. This does not scale the client bitmap or shrink Ubuntu UI elements.
++		if (width != CC10_DESKTOP_WIDTH || height != CC10_DESKTOP_HEIGHT)
++			uiHandler.postDelayed(this::requestNativeServerDesktop, 350);
++		else
++			nativeResizeAttempts = 0;
++
+ 		/*
+ 		 * since sessionView can only be modified from the UI thread any
+ 		 * modifications to it need to be scheduled
+@@ -976,6 +1024,16 @@ public class SessionActivity extends AppCompatActivity
+ 
+ 		// bind session
+ 		bindSession();
++		// This is a server-side desktop resize request, not client-side bitmap scaling.
++		// It also corrects an xrdp session restored with an older framebuffer size.
++		if (session.getBookmark() != null)
++		{
++			BookmarkBase.ScreenSettings requested =
++			    session.getBookmark().getActiveScreenSettings();
++			if (requested.getWidth() == CC10_DESKTOP_WIDTH &&
++			    requested.getHeight() == CC10_DESKTOP_HEIGHT)
++				requestNativeServerDesktop();
++		}
+ 
+ 		if (ApplicationSettingsActivity.getKeepScreenOnWhenConnected(this))
+ 		{
+@@ -1003,6 +1061,17 @@ public class SessionActivity extends AppCompatActivity
+ 		}
+ 	}
+ 
++	private void requestNativeServerDesktop()
++	{
++		if (session == null || nativeResizeAttempts >= MAX_NATIVE_RESIZE_ATTEMPTS)
++			return;
++		nativeResizeAttempts++;
++		Log.i(TAG, "Requesting native server desktop 1280x800, attempt " +
++		           nativeResizeAttempts);
++		LibFreeRDP.sendMonitorLayout(session.getInstance(), CC10_DESKTOP_WIDTH,
++		                             CC10_DESKTOP_HEIGHT);
++	}
++
+ 	private void onSessionFailed()
+ 	{
+ 		Log.v(TAG, "onSessionFailed");
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionInputManager.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionInputManager.java
+index ab918c2..d9afdb4 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionInputManager.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionInputManager.java
+@@ -305,14 +305,22 @@ public class SessionInputManager
+ 				mappedX = 0;
+ 			if (mappedY < 0)
+ 				mappedY = 0;
+-			if (mappedX > bitmap.getWidth())
+-				mappedX = bitmap.getWidth();
+-			if (mappedY > bitmap.getHeight())
+-				mappedY = bitmap.getHeight();
++			if (mappedX >= bitmap.getWidth())
++				mappedX = bitmap.getWidth() - 1;
++			if (mappedY >= bitmap.getHeight())
++				mappedY = bitmap.getHeight() - 1;
+ 		}
+ 		return new Point(mappedX, mappedY);
+ 	}
+ 
++	private Point clampSessionCoord(int x, int y)
++	{
++		if (bitmap == null)
++			return new Point(Math.max(0, x), Math.max(0, y));
++		return new Point(Math.max(0, Math.min(x, bitmap.getWidth() - 1)),
++		                 Math.max(0, Math.min(y, bitmap.getHeight() - 1)));
++	}
++
+ 	// ****************************************************************************
+ 	// SessionView.SessionViewListener
+ 
+@@ -323,44 +331,55 @@ public class SessionInputManager
+ 
+ 	@Override public void onSessionViewEndTouch()
+ 	{
+-		scrollView.setScrollEnabled(true);
++		// The CC10 framebuffer and RDP desktop are both 1280x800. Never let the
++		// parent scrolling container steal direct-touch events.
++		scrollView.setScrollEnabled(false);
+ 	}
+ 
+ 	@Override public void onSessionViewLeftTouch(int x, int y, boolean down)
+ 	{
+ 		if (instance == 0)
+ 			return;
++		Point p = clampSessionCoord(x, y);
+ 		if (!down)
+ 			cancelDelayedMoveEvent();
+-		LibFreeRDP.sendCursorEvent(instance, x, y, Mouse.getLeftButtonEvent(context, down));
++		boolean sent = LibFreeRDP.sendCursorEvent(instance, p.x, p.y,
++		                                          Mouse.getLeftButtonEvent(context, down));
++		Log.d(TAG, "left " + (down ? "down" : "up") + " @ " + p.x + "," + p.y +
++		           " sent=" + sent);
+ 	}
+ 
+ 	@Override public void onSessionViewMiddleTouch(int x, int y, boolean down)
+ 	{
+ 		if (instance == 0)
+ 			return;
+-		LibFreeRDP.sendCursorEvent(instance, x, y, Mouse.getMiddleButtonEvent(down));
++		Point p = clampSessionCoord(x, y);
++		LibFreeRDP.sendCursorEvent(instance, p.x, p.y, Mouse.getMiddleButtonEvent(down));
+ 	}
+ 
+ 	@Override public void onSessionViewRightTouch(int x, int y, boolean down)
+ 	{
+ 		if (instance == 0)
+ 			return;
+-		LibFreeRDP.sendCursorEvent(instance, x, y, Mouse.getRightButtonEvent(context, down));
++		Point p = clampSessionCoord(x, y);
++		LibFreeRDP.sendCursorEvent(instance, p.x, p.y,
++		                           Mouse.getRightButtonEvent(context, down));
+ 	}
+ 
+ 	@Override public void onSessionViewMove(int x, int y)
+ 	{
+ 		if (instance == 0)
+ 			return;
+-		sendDelayedMoveEvent(x, y);
++		Point p = clampSessionCoord(x, y);
++		sendDelayedMoveEvent(p.x, p.y);
+ 	}
+ 
+ 	@Override public void onSessionViewMouseMove(int x, int y)
+ 	{
+ 		if (instance == 0)
+ 			return;
+-		LibFreeRDP.sendCursorEvent(instance, x, y, Mouse.getMoveEvent());
++		Point p = clampSessionCoord(x, y);
++		LibFreeRDP.sendCursorEvent(instance, p.x, p.y, Mouse.getMoveEvent());
+ 	}
+ 
+ 	@Override public void onSessionViewScroll(boolean down)
+@@ -577,42 +596,20 @@ public class SessionInputManager
+ 		@Override public boolean onScaleBegin(ScaleGestureDetector detector)
+ 		{
+ 			scrollView.setScrollEnabled(false);
+-			return true;
++			sessionView.setZoom(1.0f);
++			return false;
+ 		}
+ 
+ 		@Override public boolean onScale(ScaleGestureDetector detector)
+ 		{
+-			// calc scale factor
+-			scaleFactor *= detector.getScaleFactor();
+-			scaleFactor = Math.max(SessionView.MIN_SCALE_FACTOR,
+-			                       Math.min(scaleFactor, SessionView.MAX_SCALE_FACTOR));
+-			sessionView.setZoom(scaleFactor);
+-
+-			if (!sessionView.isAtMinZoom() && !sessionView.isAtMaxZoom())
+-			{
+-				// transform scroll origin to the new zoom space
+-				float transOriginX = scrollView.getScrollX() * detector.getScaleFactor();
+-				float transOriginY = scrollView.getScrollY() * detector.getScaleFactor();
+-
+-				// transform center point to the zoomed space
+-				float transCenterX =
+-				    (scrollView.getScrollX() + detector.getFocusX()) * detector.getScaleFactor();
+-				float transCenterY =
+-				    (scrollView.getScrollY() + detector.getFocusY()) * detector.getScaleFactor();
+-
+-				// scroll by the difference between the distance of the
+-				// transformed center/origin point and their old distance
+-				// (focusX/Y)
+-				scrollView.scrollBy((int)((transCenterX - transOriginX) - detector.getFocusX()),
+-				                    (int)((transCenterY - transOriginY) - detector.getFocusY()));
+-			}
+-
+-			return true;
++			sessionView.setZoom(1.0f);
++			return false;
+ 		}
+ 
+ 		@Override public void onScaleEnd(ScaleGestureDetector de)
+ 		{
+-			scrollView.setScrollEnabled(true);
++			sessionView.setZoom(1.0f);
++			scrollView.setScrollEnabled(false);
+ 		}
+ 	}
+ }
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionView.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionView.java
+index aff0889..a2e70e1 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionView.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/presentation/SessionView.java
+@@ -41,7 +41,10 @@ import java.util.Stack;
+ public class SessionView extends View
+ {
+ 	public static final float MAX_SCALE_FACTOR = 3.0f;
+-	public static final float MIN_SCALE_FACTOR = 0.75f;
++	// Never shrink the server desktop on CC10. The server is required to provide a
++	// native 1280x800 framebuffer and the client renders it at one physical pixel
++	// per remote pixel. Zooming in remains available for inspection/accessibility.
++	public static final float MIN_SCALE_FACTOR = 1.0f;
+ 	private static final String TAG = "SessionView";
+ 	private static final float SCALE_FACTOR_DELTA = 0.0001f;
+ 	private static final float TOUCH_SCROLL_DELTA = 10.0f;
+@@ -70,6 +73,15 @@ public class SessionView extends View
+ 
+ 	// private static final String TAG = "FreeRDP.SessionView";
+ 	private DoubleGestureDetector doubleGestureDetector;
++	// CC10 direct-touch state. A single finger maps to a real held left mouse
++	// button so sliders, scrollbars and window title bars can be dragged.
++	private static final long MIN_DIRECT_CLICK_HOLD_MS = 35;
++	private boolean directTouchActive = false;
++	private boolean multiTouchActive = false;
++	private int directTouchX = 0;
++	private int directTouchY = 0;
++	private long directTouchDownTime = 0;
++	private Runnable pendingDirectRelease = null;
+ 	public SessionView(Context context)
+ 	{
+ 		super(context);
+@@ -296,14 +308,65 @@ public class SessionView extends View
+ 		return mappedEvent;
+ 	}
+ 
++	private void flushPendingDirectRelease()
++	{
++		Runnable release = pendingDirectRelease;
++		if (release != null)
++		{
++			removeCallbacks(release);
++			release.run();
++		}
++	}
++
++	private void releaseDirectTouch(final int x, final int y, boolean keepMinimumHold)
++	{
++		if (!directTouchActive)
++			return;
++
++		directTouchActive = false;
++		long heldFor = eventTimeNow() - directTouchDownTime;
++		long delay = keepMinimumHold ? Math.max(0, MIN_DIRECT_CLICK_HOLD_MS - heldFor) : 0;
++		final Runnable release = new Runnable() {
++			@Override public void run()
++			{
++				if (pendingDirectRelease != this)
++					return;
++				sessionViewListener.onSessionViewLeftTouch(x, y, false);
++				sessionViewListener.onSessionViewEndTouch();
++				pendingDirectRelease = null;
++			}
++		};
++		pendingDirectRelease = release;
++		if (delay > 0)
++			postDelayed(release, delay);
++		else
++			release.run();
++	}
++
++	private long eventTimeNow()
++	{
++		return android.os.SystemClock.uptimeMillis();
++	}
++
+ 	@Override public boolean onTouchEvent(MotionEvent event)
+ 	{
++		final int action = event.getActionMasked();
++		if (action == MotionEvent.ACTION_DOWN)
++		{
++			requestFocus();
++			if (getParent() != null)
++				getParent().requestDisallowInterceptTouchEvent(true);
++		}
++		else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)
++		{
++			if (getParent() != null)
++				getParent().requestDisallowInterceptTouchEvent(false);
++		}
+ 		// Physical mouse events: bypass gesture detector entirely.
+ 		// Buttons are handled in onGenericMotionEvent; hover moves in onHoverEvent.
+ 		// Only ACTION_MOVE with a button held (drag) needs handling here.
+ 		if (event.isFromSource(InputDevice.SOURCE_MOUSE))
+ 		{
+-			int action = event.getActionMasked();
+ 			if (action == MotionEvent.ACTION_MOVE && event.getButtonState() != 0)
+ 			{
+ 				MotionEvent mapped = mapTouchEvent(event);
+@@ -314,12 +377,80 @@ public class SessionView extends View
+ 			return true;
+ 		}
+ 
+-		boolean res = gestureDetector.onTouchEvent(event);
+-		res |= doubleGestureDetector.onTouchEvent(event);
+-		return res;
++		// Always let the two-finger detector observe the initial DOWN so it can
++		// recognise a second finger arriving shortly afterwards.
++		if (action == MotionEvent.ACTION_DOWN)
++		{
++			flushPendingDirectRelease();
++			multiTouchActive = false;
++			doubleGestureDetector.onTouchEvent(event);
++
++			MotionEvent mapped = mapTouchEvent(event);
++			directTouchX = (int)mapped.getX();
++			directTouchY = (int)mapped.getY();
++			mapped.recycle();
++			directTouchDownTime = event.getEventTime();
++			directTouchActive = true;
++			sessionViewListener.onSessionViewBeginTouch();
++			sessionViewListener.onSessionViewMouseMove(directTouchX, directTouchY);
++			sessionViewListener.onSessionViewLeftTouch(directTouchX, directTouchY, true);
++			return true;
++		}
++
++		if (action == MotionEvent.ACTION_POINTER_DOWN)
++		{
++			// A second finger changes the gesture into scroll/right-click. Release
++			// the provisional left button first so Ubuntu can never receive a
++			// stuck or accidental drag while processing the two-finger gesture.
++			if (directTouchActive)
++				releaseDirectTouch(directTouchX, directTouchY, false);
++			multiTouchActive = true;
++			doubleGestureDetector.onTouchEvent(event);
++			return true;
++		}
++
++		if (multiTouchActive)
++		{
++			doubleGestureDetector.onTouchEvent(event);
++			if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)
++				multiTouchActive = false;
++			return true;
++		}
++
++		if (action == MotionEvent.ACTION_MOVE && directTouchActive)
++		{
++			MotionEvent mapped = mapTouchEvent(event);
++			directTouchX = (int)mapped.getX();
++			directTouchY = (int)mapped.getY();
++			mapped.recycle();
++			// Use the immediate move path; the older delayed move path made short
++			// slider/window drags appear to be ignored on the CC10 touchscreen.
++			sessionViewListener.onSessionViewMouseMove(directTouchX, directTouchY);
++			return true;
++		}
++
++		if (action == MotionEvent.ACTION_UP && directTouchActive)
++		{
++			MotionEvent mapped = mapTouchEvent(event);
++			directTouchX = (int)mapped.getX();
++			directTouchY = (int)mapped.getY();
++			mapped.recycle();
++			sessionViewListener.onSessionViewMouseMove(directTouchX, directTouchY);
++			releaseDirectTouch(directTouchX, directTouchY, true);
++			return true;
++		}
++
++		if (action == MotionEvent.ACTION_CANCEL)
++		{
++			releaseDirectTouch(directTouchX, directTouchY, false);
++			return true;
++		}
++
++		return true;
+ 	}
+ 
+-	// Handle all physical mouse buttons here; finger taps come via onSingleTapUp.
++	// Handle all physical mouse buttons here; finger input uses the direct-touch
++	// state machine in onTouchEvent.
+ 	@Override public boolean onGenericMotionEvent(MotionEvent event)
+ 	{
+ 		final boolean isPointer = event.isFromSource(InputDevice.SOURCE_CLASS_POINTER);
+@@ -494,12 +625,16 @@ public class SessionView extends View
+ 
+ 			// Finger touch -> left click
+ 			MotionEvent mappedEvent = mapTouchEvent(e);
++			final int x = (int)mappedEvent.getX();
++			final int y = (int)mappedEvent.getY();
+ 			sessionViewListener.onSessionViewBeginTouch();
+-			sessionViewListener.onSessionViewLeftTouch((int)mappedEvent.getX(),
+-			                                           (int)mappedEvent.getY(), true);
+-			sessionViewListener.onSessionViewLeftTouch((int)mappedEvent.getX(),
+-			                                           (int)mappedEvent.getY(), false);
+-			sessionViewListener.onSessionViewEndTouch();
++			sessionViewListener.onSessionViewMouseMove(x, y);
++			sessionViewListener.onSessionViewLeftTouch(x, y, true);
++			postDelayed(() -> {
++				sessionViewListener.onSessionViewLeftTouch(x, y, false);
++				sessionViewListener.onSessionViewEndTouch();
++			}, 35);
++			mappedEvent.recycle();
+ 			return true;
+ 		}
+ 	}
+diff --git a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/services/ManualBookmarkGateway.java b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/services/ManualBookmarkGateway.java
+index 9f41792..806c6c7 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/services/ManualBookmarkGateway.java
++++ b/client/Android/Studio/freeRDPCore/src/main/java/com/freerdp/freerdpcore/services/ManualBookmarkGateway.java
+@@ -49,6 +49,12 @@ public class ManualBookmarkGateway
+ 		return (e != null) ? BookmarkConverter.toBookmark(e) : null;
+ 	}
+ 
++	public BookmarkBase findFirstByHostname(String hostname)
++	{
++		BookmarkEntity e = dao.getFirstByHostname(hostname);
++		return (e != null) ? BookmarkConverter.toBookmark(e) : null;
++	}
++
+ 	public long insert(BookmarkBase bookmark)
+ 	{
+ 		long newId = dao.insert(BookmarkConverter.toEntity(bookmark));
+@@ -67,6 +73,7 @@ public class ManualBookmarkGateway
+ 		dao.deleteById(id);
+ 		return true;
+ 	}
++	public void deleteAllExcept(long keepId) { dao.deleteAllExcept(keepId); }
+ 
+ 	public ArrayList<BookmarkBase> findByLabelOrHostnameLike(String pattern)
+ 	{
+diff --git a/client/Android/Studio/freeRDPCore/src/main/res/layout/floating_toolbar.xml b/client/Android/Studio/freeRDPCore/src/main/res/layout/floating_toolbar.xml
+index 117fd52..a2d43f1 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/res/layout/floating_toolbar.xml
++++ b/client/Android/Studio/freeRDPCore/src/main/res/layout/floating_toolbar.xml
+@@ -16,7 +16,8 @@
+         android:layout_height="32dp"
+         android:background="?android:attr/selectableItemBackground"
+         app:tint="#FFFFFF"
+-        android:src="@drawable/ic_drag_indicator" />
++        android:contentDescription="展开或收起工具栏"
++        android:src="@drawable/ic_chevron_right" />
+ 
+     <LinearLayout
+         android:id="@+id/floating_toolbar_buttons"
+@@ -43,6 +44,24 @@
+             app:tint="#FFFFFF"
+             android:src="@drawable/ic_keyboard" />
+ 
++        <ImageButton
++            android:id="@+id/floating_toolbar_microphone"
++            android:layout_width="32dp"
++            android:layout_height="32dp"
++            android:background="?android:attr/selectableItemBackground"
++            android:contentDescription="远程麦克风状态"
++            app:tint="#FFFFFF"
++            android:src="@drawable/ic_microphone" />
++
++        <ImageButton
++            android:id="@+id/floating_toolbar_disconnect"
++            android:layout_width="32dp"
++            android:layout_height="32dp"
++            android:background="?android:attr/selectableItemBackground"
++            android:contentDescription="断开连接"
++            app:tint="#FF8A80"
++            android:src="@drawable/ic_disconnect" />
++
+     </LinearLayout>
+ 
+ </LinearLayout>
+diff --git a/client/Android/Studio/freeRDPCore/src/main/res/layout/home.xml b/client/Android/Studio/freeRDPCore/src/main/res/layout/home.xml
+index 6c6b695..a270647 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/res/layout/home.xml
++++ b/client/Android/Studio/freeRDPCore/src/main/res/layout/home.xml
+@@ -8,14 +8,66 @@
+    If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+ -->
+-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+-    android:fitsSystemWindows="true">
++    android:fitsSystemWindows="true"
++    android:orientation="horizontal"
++    android:background="#F3F6F8">
+ 
+-    <androidx.recyclerview.widget.RecyclerView
+-        android:id="@+id/recyclerViewBookmarks"
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent" />
++    <LinearLayout
++        android:layout_width="380dp"
++        android:layout_height="match_parent"
++        android:orientation="vertical"
++        android:gravity="center_vertical"
++        android:padding="42dp"
++        android:background="#087E73">
++        <TextView
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="CC10远程桌面"
++            android:textColor="#FFFFFF"
++            android:textStyle="bold"
++            android:textSize="32sp" />
++        <TextView
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="16dp"
++            android:text="使用 RDP 连接 Ubuntu 或 Windows\n支持 IP、域名和自定义端口"
++            android:textColor="#D8F3EF"
++            android:textSize="18sp"
++            android:lineSpacingExtra="6dp" />
++        <Button
++            android:id="@+id/buttonNewConnection"
++            android:layout_width="match_parent"
++            android:layout_height="64dp"
++            android:layout_marginTop="36dp"
++            android:text="新建连接"
++            android:textSize="20sp"
++            android:textColor="#087E73"
++            android:backgroundTint="#FFFFFF" />
++    </LinearLayout>
+ 
+-</RelativeLayout>
++    <LinearLayout
++        android:layout_width="0dp"
++        android:layout_height="match_parent"
++        android:layout_weight="1"
++        android:orientation="vertical"
++        android:padding="28dp">
++        <TextView
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="已保存的连接"
++            android:textColor="#263238"
++            android:textStyle="bold"
++            android:textSize="26sp"
++            android:layout_marginBottom="18dp" />
++
++        <androidx.recyclerview.widget.RecyclerView
++            android:id="@+id/recyclerViewBookmarks"
++            android:layout_width="match_parent"
++            android:layout_height="0dp"
++            android:layout_weight="1" />
++    </LinearLayout>
++
++</LinearLayout>
+diff --git a/client/Android/Studio/freeRDPCore/src/main/res/xml/bookmark_settings.xml b/client/Android/Studio/freeRDPCore/src/main/res/xml/bookmark_settings.xml
+index df85d49..110335d 100644
+--- a/client/Android/Studio/freeRDPCore/src/main/res/xml/bookmark_settings.xml
++++ b/client/Android/Studio/freeRDPCore/src/main/res/xml/bookmark_settings.xml
+@@ -14,7 +14,7 @@
+ 
+     <PreferenceCategory
+         android:key="category.host"
+-        android:title="@string/settings_cat_host">
++        android:title="常规设置">
+         <EditTextPreference
+             android:key="bookmark.label"
+             android:singleLine="true"
+@@ -34,39 +34,31 @@
+             freerdp:bounds_max="65535"
+             freerdp:bounds_min="10" 
+             app:useSimpleSummaryProvider="true"/>
+-    </PreferenceCategory>
+-
+-    <PreferenceCategory android:title="@string/settings_cat_credentials">
+-        <Preference
+-            android:key="bookmark.credentials"
+-            android:title="@string/settings_credentials"
+-            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$CredentialsFragment" />
++        <EditTextPreference
++            android:key="bookmark.username"
++            android:singleLine="true"
++            android:title="@string/settings_username"
++            app:useSimpleSummaryProvider="true" />
++        <EditTextPreference
++            android:inputType="textPassword"
++            android:singleLine="true"
++            android:key="bookmark.password"
++            android:title="@string/settings_password" />
++        <EditTextPreference
++            android:key="bookmark.domain"
++            android:singleLine="true"
++            android:title="@string/settings_domain"
++            app:useSimpleSummaryProvider="true" />
+     </PreferenceCategory>
+ 
+     <PreferenceCategory
+         android:key="category.settings"
+-        android:title="@string/settings_cat_settings">
+-
++        android:title="其他设置">
+         <Preference
+-            android:key="bookmark.screen"
+-            android:title="@string/settings_screen"
+-            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$ScreenFragment" />
+-
+-        <Preference
+-            android:key="bookmark.performance"
+-            android:title="@string/settings_performance"
+-            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$PerformanceFragment" />
+-
+-        <Preference
+-            android:key="bookmark.advanced"
++            android:key="bookmark.more_settings"
+             android:title="@string/settings_advanced"
+-            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$AdvancedFragment" />
+-
+-        <Preference
+-            android:key="bookmark.debug"
+-            android:title="@string/settings_debug"
+-            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$DebugFragment" />
+-
++            android:summary="屏幕、性能、重定向和调试选项"
++            app:fragment="com.freerdp.freerdpcore.presentation.BookmarkActivity$MoreSettingsFragment" />
+     </PreferenceCategory>
+ 
+ </PreferenceScreen>
+diff --git a/client/Android/cmake/ExternalFreeRDP.cmake b/client/Android/cmake/ExternalFreeRDP.cmake
+index 69a258e..528d42e 100644
+--- a/client/Android/cmake/ExternalFreeRDP.cmake
++++ b/client/Android/cmake/ExternalFreeRDP.cmake
+@@ -1,7 +1,5 @@
+ include(ExternalProject)
+ 
+-find_package(PkgConfig REQUIRED)
+-
+ set(FREERDP_PREFIX_PATH
+     "${DEPS_INSTALL_DIR};${DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake;${DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR};${DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/pkgconfig;${DEPS_INSTALL_DIR};${DEPS_INSTALL_DIR}/${CMAKE_INSTALL_DATAROOTDIR}"
+ )
+@@ -16,8 +14,6 @@ set(FREERDP_EXTRA_CMAKE_ARGS
+     -DWITH_SERVER:BOOL=OFF
+     -DWITH_MANPAGES:BOOL=OFF
+     -DWITH_SYSTEMD:BOOL=OFF
+-    # Toolchain
+-    -DPKG_CONFIG_EXECUTABLE:FILEPATH=${PKG_CONFIG_EXECUTABLE}
+     # Internal crypto
+     -DWITH_INTERNAL_RC4:BOOL=ON
+     -DWITH_INTERNAL_MD4:BOOL=ON
+@@ -40,8 +36,8 @@ set(FREERDP_EXTRA_CMAKE_ARGS
+     -DWITH_CJSON_REQUIRED:BOOL=${WITH_CJSON}
+     # Printer channel
+     -DCHANNEL_PRINTER_CLIENT:BOOL=ON
+-    # Camera redirection (Android NDK Camera2 HAL)
+-    -DCHANNEL_RDPECAM_CLIENT:BOOL=ON
++    # CC10 MVP: camera redirection needs Android NDK API 24 and is not required.
++    -DCHANNEL_RDPECAM_CLIENT:BOOL=OFF
+     -DWITH_VERBOSE_WINPR_ASSERT:BOOL=OFF
+ )
+ 
+diff --git a/client/Android/cmake/ExternalOpenSSL.cmake b/client/Android/cmake/ExternalOpenSSL.cmake
+index ec7fde4..d5ad74b 100644
+--- a/client/Android/cmake/ExternalOpenSSL.cmake
++++ b/client/Android/cmake/ExternalOpenSSL.cmake
+@@ -17,6 +17,15 @@ else()
+ endif()
+ 
+ set(NDK_TOOLCHAIN_BIN "${NDK_ROOT}/toolchains/llvm/prebuilt/${NDK_HOST_PLATFORM}/bin")
++if(CMAKE_HOST_WIN32)
++  set(OPENSSL_PERL "${FREERDP_SOURCE_DIR}/tool-bin/openssl-perl.cmd")
++  set(OPENSSL_MAKE "${FREERDP_SOURCE_DIR}/tool-bin/openssl-make.cmd")
++  string(REGEX REPLACE "^C:/" "/c/" OPENSSL_NDK_ROOT "${NDK_ROOT}")
++else()
++  set(OPENSSL_PERL perl)
++  set(OPENSSL_MAKE make)
++  set(OPENSSL_NDK_ROOT "${NDK_ROOT}")
++endif()
+ 
+ ExternalProject_Add(
+   openssl
+@@ -27,13 +36,13 @@ ExternalProject_Add(
+   URL_HASH ${OPENSSL_HASH}
+   LIST_SEPARATOR |
+   CONFIGURE_COMMAND
+-    ${CMAKE_COMMAND} -E env PATH=${NDK_TOOLCHAIN_BIN}:$ENV{PATH} ANDROID_NDK=${NDK_ROOT} ANDROID_NDK_ROOT=${NDK_ROOT}
+-    ANDROID_NDK_HOME=${NDK_ROOT} CC=clang perl <SOURCE_DIR>/Configure ${OSSL_ARCH} shared no-tests no-apps no-docs
++    ${CMAKE_COMMAND} -E env ANDROID_NDK=${OPENSSL_NDK_ROOT} ANDROID_NDK_ROOT=${OPENSSL_NDK_ROOT}
++    ANDROID_NDK_HOME=${OPENSSL_NDK_ROOT} CC=clang ${OPENSSL_PERL} <SOURCE_DIR>/Configure ${OSSL_ARCH} no-shared no-tests no-apps no-docs
+     -U__ANDROID_API__ -D__ANDROID_API__=${NDK_API_LEVEL} --prefix=${DEPS_INSTALL_DIR} --libdir=${CMAKE_INSTALL_LIBDIR}
+-  BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${NDK_TOOLCHAIN_BIN}:$ENV{PATH} ANDROID_NDK=${NDK_ROOT}
+-                ANDROID_NDK_ROOT=${NDK_ROOT} ANDROID_NDK_HOME=${NDK_ROOT} make -j SHLIB_EXT=.so build_libs
++  BUILD_COMMAND ${CMAKE_COMMAND} -E env ANDROID_NDK=${OPENSSL_NDK_ROOT}
++                ANDROID_NDK_ROOT=${OPENSSL_NDK_ROOT} ANDROID_NDK_HOME=${OPENSSL_NDK_ROOT} ${OPENSSL_MAKE} -j PERL=${OPENSSL_PERL} SHLIB_EXT=.so build_libs
+   INSTALL_COMMAND
+-    ${CMAKE_COMMAND} -E env PATH=${NDK_TOOLCHAIN_BIN}:$ENV{PATH} ANDROID_NDK=${NDK_ROOT} ANDROID_NDK_ROOT=${NDK_ROOT}
+-    ANDROID_NDK_HOME=${NDK_ROOT} make -j SHLIB_EXT=.so install_sw && ${CMAKE_COMMAND} -E copy_directory
++    ${CMAKE_COMMAND} -E env ANDROID_NDK=${OPENSSL_NDK_ROOT} ANDROID_NDK_ROOT=${OPENSSL_NDK_ROOT}
++    ANDROID_NDK_HOME=${OPENSSL_NDK_ROOT} ${OPENSSL_MAKE} -j PERL=${OPENSSL_PERL} SHLIB_EXT=.so install_sw && ${CMAKE_COMMAND} -E copy_directory
+     ${DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/ossl-modules ${DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
+ )

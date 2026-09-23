@@ -1,0 +1,16 @@
+.idea/
+.gradle/
+build/
+**/build/
+local.properties
+release.properties
+*.jks
+*.keystore
+*.pk8
+*.pem
+*.log
+*.txt
+captures/
+connections*/
+*.rdp
+.copy-release.ps1
